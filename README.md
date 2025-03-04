@@ -26,7 +26,7 @@ You’ll also need a [SerpApi API key](https://serpapi.com/manage-api-key). Sign
 
 2. Configure the API Key: Create a .env file in the same directory with your SerpApi API key:
 ```plaintext
-SERP_API_KEY=your_api_key_here
+SERPAPI_API_KEY=your_api_key_here
 ```
 
 3. Run the Server: Start the server with:
@@ -35,7 +35,7 @@ SERP_API_KEY=your_api_key_here
 python server.py
 ```
 
-4. Integrate with an MCP Client: Connect the server to an MCP client or host (e.g., Grok for Desktop). For Grok, update Grok_desktop_config.json:
+4. Integrate with an MCP Client: Connect the server to an MCP client or host (e.g., Claude for Desktop). For Claude, update Claude_desktop_config.json:
 
 ```json
 {
@@ -85,23 +85,17 @@ result = await session.call_tool("search", {
 ```
 print(result)
 
-Retrieving Archived Results
-Fetch archived results using a search ID:
-```python
-
-result = await session.call_tool("get_search_archive", {"search_id": "some_search_id"})
-print(result)
-```
-
 ## Configuration
-API Key: Set your SerpApi API key in the `.env` file as `SERP_API_KEY`.
+API Key: Set your SerpApi API key in the `.env` file as `SERPAPI_API_KEY`.
 
-Running the Server
+### Running the Server
+
 Production Mode: Launch the server with:
 ```bash
 
 python server.py
 ```
+
 Development Mode: Use the MCP Inspector for debugging:
 
 ```bash
@@ -110,5 +104,5 @@ mcp dev server.py
 
 ## Testing
 
-Test the server using the MCP Inspector or an MCP client. For Claude for Desktop, configure the server in Claude_desktop_config.json, restart the app, and use the hammer icon to explore and test available tools.
+Test the server using the MCP Inspector or an MCP client. For Claude for Desktop, configure the server in `Claude_desktop_config.json`, restart the app, and use the hammer icon to explore and test available tools.
 
