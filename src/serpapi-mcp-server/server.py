@@ -1,7 +1,8 @@
 from mcp.server.fastmcp import FastMCP
 from dotenv import load_dotenv
 import os
-from typing import Dict, Any
+import httpx
+from typing import Dict, Any, Optional, List
 from serpapi import SerpApiClient as SerpApiSearch
 
 # Load environment variables from .env file
@@ -15,10 +16,10 @@ if not API_KEY:
 # Initialize the MCP server
 mcp = FastMCP("SerpApi MCP Server")
 
-# Tool to perform searches via SerpApi
+# Tool to perform web searches via SerpApi
 @mcp.tool()
 async def search(params: Dict[str, Any] = {}) -> str:
-    """Perform a search on the specified engine using SerpApi.
+    """Perform a web search using SerpApi.
 
     Args:
         params: Dictionary of engine-specific parameters (e.g., {"q": "Coffee", "engine": "google_light", "location": "Austin, TX"}).
@@ -58,6 +59,85 @@ async def search(params: Dict[str, Any] = {}) -> str:
         else:
             return f"Error: {e.response.status_code} - {e.response.text}"
     # Handle other exceptions (e.g., network issues)
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+# Tool to perform image searches via SerpApi
+@mcp.tool()
+async def image_search(
+    query: str,
+    count: Optional[int] = 5,
+    start: Optional[int] = 1,
+    params: Optional[Dict[str, Any]] = None
+) -> str:
+    """Search for images using SerpApi's Google Images engine.
+
+    Args:
+        query: The search query for images
+        count: Number of image results to return (1-10, default 5)
+        start: Pagination start index (default 1)
+        params: Optional additional parameters for the search
+
+    Returns:
+        A formatted string of image search results or an error message.
+    """
+    if count > 10:
+        count = 10  # Limit to 10 results max
+    
+    search_params = {
+        "api_key": API_KEY,
+        "engine": "google_images",
+        "q": query,
+        "ijn": (start - 1) // 10,  # Page number for pagination
+        "num": count
+    }
+    
+    # Add any additional parameters
+    if params:
+        search_params.update(params)
+    
+    try:
+        search = SerpApiSearch(search_params)
+        data = search.get_dict()
+        
+        # Handle if no results
+        if "error" in data:
+            return f"Error: {data['error']}"
+        
+        # Process image results
+        image_results = data.get("images_results", [])
+        if not image_results:
+            return "No image results found for your query."
+            
+        formatted_results: List[str] = []
+        for i, image in enumerate(image_results[:count]):
+            title = image.get("title", "No title")
+            original_image = image.get("original", "")
+            thumbnail = image.get("thumbnail", "")
+            source = image.get("source", "Unknown")
+            
+            formatted_results.append(
+                f"[{i+1}] Title: {title}\n"
+                f"Source: {source}\n"
+                f"Image URL: {original_image}\n"
+                f"Thumbnail: {thumbnail}\n"
+            )
+            
+        # Add related searches if available
+        if "related_searches" in data and data["related_searches"]:
+            related_queries = [item.get("query", "") for item in data["related_searches"][:5]]
+            formatted_results.append("\nRelated Searches: " + ", ".join(related_queries))
+            
+        return "\n\n".join(formatted_results)
+    
+    # Handle exceptions
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 429:
+            return "Error: Rate limit exceeded. Please try again later."
+        elif e.response.status_code == 401:
+            return "Error: Invalid API key. Please check your SERPAPI_API_KEY."
+        else:
+            return f"Error: {e.response.status_code} - {e.response.text}"
     except Exception as e:
         return f"Error: {str(e)}"
 
